@@ -1,13 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import App from '@/App.vue'
+
+import DecksView from '@/views/DecksView.vue'
+import NewView from '@/views/NewView.vue'
+import StudyView from '@/views/StudyView.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.VITE_BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: App,
+      name: 'decks',
+      component: DecksView,
+    },
+    {
+      path: '/new',
+      name: 'new',
+      component: NewView,
+    },
+    {
+      path: '/study/:deckId',
+      name: 'study',
+      component: StudyView,
     },
   ],
 })
