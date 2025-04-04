@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 import { fsrs } from 'ts-fsrs'
+import IconCheck from '@/icons/IconCheck.vue'
 import db from '@/db'
 import type { Card } from '@/types'
 
@@ -93,34 +94,118 @@ onBeforeMount(async () => {
       <h1>Повторение</h1>
     </header>
 
-    <div v-if="currentCard">
-      <div>{{ currentCard.front }}</div>
-      <div v-if="isCardFlipped">{{ currentCard.back }}</div>
+    <div class="study">
+      <div v-if="currentCard" class="card">
+        <div v-if="isCardFlipped && currentCard.back">{{ currentCard.back }}</div>
+        <div v-else>{{ currentCard.front }}</div>
+      </div>
 
-      <button v-if="!isCardFlipped" @click="isCardFlipped = true">Перевернуть</button>
-      <div v-else>
-        <button
-          v-for="option in getCurrentCardRepetitionOptions()"
-          :key="option.grade"
-          @click="repeatCurrentCard(option.grade)"
-        >
-          {{ option.grade }} ({{ option.due }})
-        </button>
+      <div v-else class="done">
+        <IconCheck class="done-icon" />
+        <div>Сегодня нечего повторять</div>
+      </div>
+
+      <div v-if="currentCard" class="actions">
+        <div v-if="isCardFlipped" class="repeat-buttons">
+          <button
+            v-for="option in getCurrentCardRepetitionOptions()"
+            :key="option.grade"
+            class="repeat-button"
+            :class="`repeat-button-${option.grade.toLowerCase()}`"
+            @click="repeatCurrentCard(option.grade)"
+          >
+            <div>{{ option.due }}</div>
+            <div>{{ option.grade }}</div>
+          </button>
+        </div>
+
+        <button v-else class="flip-button" @click="isCardFlipped = true">Перевернуть</button>
       </div>
     </div>
-
-    <div v-else>Сегодня нечего повторять</div>
   </main>
 </template>
 
 <style scoped>
 header {
-  padding-block: 0.7rem;
-  border-bottom: 0.05rem solid rgb(209, 209, 209);
+  height: 3.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 0.05rem solid rgb(242, 242, 242);
 }
 
 h1 {
   font-size: 1.3rem;
+}
+
+.study {
+  height: calc(100% - 3.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  margin: 1rem;
+  padding: 1rem;
+  flex: 1;
   text-align: center;
+  align-content: center;
+  white-space: pre;
+  overflow-y: auto;
+  border-radius: 0.5rem;
+  box-shadow: rgba(100, 100, 111, 0.2) 0 0.45rem 1.8rem 0;
+}
+
+.done {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.done-icon {
+  width: 3rem;
+  height: 3rem;
+}
+
+.actions {
+  padding: 0 1rem 1rem;
+}
+
+.repeat-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.repeat-button {
+  padding-block: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.9rem;
+}
+.repeat-button-заново {
+  background-color: rgb(255, 204, 211);
+}
+.repeat-button-сложно {
+  background-color: rgb(255, 240, 133);
+}
+.repeat-button-средне {
+  background-color: rgb(185, 248, 207);
+}
+.repeat-button-легко {
+  background-color: rgb(162, 244, 253);
+}
+
+.flip-button {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 0.5rem;
+  background-color: var(--foreground-color);
+  color: rgb(255, 255, 255);
 }
 </style>
