@@ -36,12 +36,12 @@ button {
 }
 
 input {
-  padding: 0.5rem;
+  padding: 0.65rem;
   border: 0.05rem solid var(--foreground-color);
 }
 
 button {
-  padding-block: 0.5rem;
+  padding-block: 0.7rem;
   background-color: var(--foreground-color);
   color: rgb(255, 255, 255);
 }
