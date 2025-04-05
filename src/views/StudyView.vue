@@ -2,6 +2,7 @@
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 import { fsrs } from 'ts-fsrs'
+import StudyHeader from '@/components/StudyHeader.vue'
 import IconCheck from '@/icons/IconCheck.vue'
 import db from '@/db'
 import type { Card } from '@/types'
@@ -90,9 +91,7 @@ onBeforeMount(async () => {
 
 <template>
   <main>
-    <header>
-      <h1>Повторение</h1>
-    </header>
+    <StudyHeader :current-card @current-card-deleted="cardsToReview.shift()" />
 
     <div class="study">
       <div v-if="currentCard" class="card">
@@ -126,18 +125,6 @@ onBeforeMount(async () => {
 </template>
 
 <style scoped>
-header {
-  height: 3.5rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-bottom: 0.05rem solid rgb(242, 242, 242);
-}
-
-h1 {
-  font-size: 1.3rem;
-}
-
 .study {
   height: calc(100% - 3.5rem);
   display: flex;

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import DecksView from '@/views/DecksView.vue'
 import NewView from '@/views/NewView.vue'
+import EditView from '@/views/EditView.vue'
 import StudyView from '@/views/StudyView.vue'
 
 const router = createRouter({
@@ -16,6 +17,11 @@ const router = createRouter({
       path: '/new',
       name: 'new',
       component: NewView,
+    },
+    {
+      path: '/edit/:cardId',
+      name: 'edit',
+      component: EditView,
     },
     {
       path: '/study/:deckId',

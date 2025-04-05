@@ -110,6 +110,26 @@ export default {
     })
   },
 
+  async getCard(cardId: string): Promise<Card> {
+    const db = await getDB()
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('cards')
+      const store = transaction.objectStore('cards')
+      const request = store.get(cardId)
+
+      request.onsuccess = () => {
+        console.log(request.result)
+        resolve(request.result)
+      }
+
+      request.onerror = () => {
+        console.error(request.error)
+        reject(request.error)
+      }
+    })
+  },
+
   async createCard(card: Card): Promise<Card> {
     const db = await getDB()
 
@@ -141,6 +161,26 @@ export default {
       request.onsuccess = () => {
         console.log(card)
         resolve(card)
+      }
+
+      request.onerror = () => {
+        console.error(request.error)
+        reject(request.error)
+      }
+    })
+  },
+
+  async deleteCard(cardId: string): Promise<void> {
+    const db = await getDB()
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('cards', 'readwrite')
+      const store = transaction.objectStore('cards')
+      const request = store.delete(cardId)
+
+      request.onsuccess = () => {
+        console.log(request.result)
+        resolve(request.result)
       }
 
       request.onerror = () => {
