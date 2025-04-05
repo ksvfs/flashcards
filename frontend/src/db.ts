@@ -10,8 +10,8 @@ async function getDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = () => {
       const db = request.result
-      db.createObjectStore('decks', { keyPath: 'id' })
-      db.createObjectStore('cards', { keyPath: 'id' }).createIndex('deckIndex', 'deckId')
+      db.createObjectStore('decks', { keyPath: '_id' })
+      db.createObjectStore('cards', { keyPath: '_id' }).createIndex('deckIndex', 'deckId')
     }
 
     request.onsuccess = () => {

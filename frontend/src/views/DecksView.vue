@@ -15,8 +15,8 @@ const { decks } = storeToRefs(useDecksStore())
     <ul v-if="decks.length">
       <li
         v-for="deck in decks"
-        :key="deck.id"
-        @click="router.push({ name: 'study', params: { deckId: deck.id } })"
+        :key="deck._id"
+        @click="router.push({ name: 'study', params: { deckId: deck._id } })"
       >
         {{ deck.name }}
       </li>

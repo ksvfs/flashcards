@@ -14,8 +14,8 @@ const newCardBack = ref('')
 function handleSubmit() {
   db.createCard({
     ...createEmptyCard(new Date()),
-    id: crypto.randomUUID(),
-    deckId: currentDeck.value.id,
+    _id: crypto.randomUUID(),
+    deckId: currentDeck.value._id,
     front: newCardFront.value,
     back: newCardBack.value,
   })
@@ -27,7 +27,7 @@ function handleSubmit() {
 <template>
   <form @submit.prevent="handleSubmit">
     <select v-model="currentDeck">
-      <option v-for="deck in decks" :key="deck.id" :value="deck">
+      <option v-for="deck in decks" :key="deck._id" :value="deck">
         {{ deck.name }}
       </option>
     </select>

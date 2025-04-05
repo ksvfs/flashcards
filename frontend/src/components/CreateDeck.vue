@@ -9,7 +9,7 @@ const { decks } = storeToRefs(useDecksStore())
 const newDeckName = ref('')
 
 async function handleSubmit() {
-  const newDeck = { id: crypto.randomUUID(), name: newDeckName.value }
+  const newDeck = { _id: crypto.randomUUID(), name: newDeckName.value }
   db.createDeck(newDeck)
   decks.value.push(newDeck)
   newDeckName.value = ''

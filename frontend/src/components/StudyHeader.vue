@@ -37,7 +37,7 @@ function closeMenuOnClickOutside(e: Event): void {
 
 function deleteCurrentCard(): void {
   if (!props.currentCard) return
-  db.deleteCard(props.currentCard.id)
+  db.deleteCard(props.currentCard._id)
   emit('currentCardDeleted')
 }
 </script>
@@ -53,7 +53,7 @@ function deleteCurrentCard(): void {
     <div v-if="currentCard && showMenu" class="menu" ref="menu">
       <button
         class="menu-item"
-        @click="router.push({ name: 'edit', params: { cardId: currentCard.id } })"
+        @click="router.push({ name: 'edit', params: { cardId: currentCard._id } })"
       >
         <IconEdit /> Редактировать
       </button>
