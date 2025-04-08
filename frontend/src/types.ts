@@ -12,4 +12,5 @@ export type Card = FSRSCard & {
 export type Deck = {
   _id: string
   name: string
+  type: 'local' | 'cloud'
 }

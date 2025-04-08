@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useDecksStore } from '@/stores/decks'
+import { localDb, cloudDb } from '@/db/db'
 import IconThreeDots from '@/icons/IconThreeDots.vue'
 import IconEdit from '@/icons/IconEdit.vue'
 import IconDelete from '@/icons/IconDelete.vue'
-import db from '@/db'
 import type { Card } from '@/types'
 
 const props = defineProps<{
@@ -36,8 +38,20 @@ function closeMenuOnClickOutside(e: Event): void {
 }
 
 function deleteCurrentCard(): void {
-  if (!props.currentCard) return
-  db.deleteCard(props.currentCard._id)
+  const currentCard = props.currentCard
+
+  if (!currentCard) return
+
+  const { decks } = storeToRefs(useDecksStore())
+
+  const currentDeck = decks.value.find((deck) => deck._id === currentCard.deckId)!
+
+  if (currentDeck.type === 'local') {
+    localDb.deleteCard(props.currentCard._id)
+  } else if (currentDeck.type === 'cloud') {
+    cloudDb.deleteCard(props.currentCard._id)
+  }
+
   emit('currentCardDeleted')
 }
 </script>
@@ -53,7 +67,12 @@ function deleteCurrentCard(): void {
     <div v-if="currentCard && showMenu" class="menu" ref="menu">
       <button
         class="menu-item"
-        @click="router.push({ name: 'edit', params: { cardId: currentCard._id } })"
+        @click="
+          router.push({
+            name: 'edit',
+            params: { deckId: currentCard.deckId, cardId: currentCard._id },
+          })
+        "
       >
         <IconEdit /> Редактировать
       </button>

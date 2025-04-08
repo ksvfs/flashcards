@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { fsrs } from 'ts-fsrs'
 import StudyHeader from '@/components/StudyHeader.vue'
 import IconCheck from '@/icons/IconCheck.vue'
-import db from '@/db'
+import { useDecksStore } from '@/stores/decks'
+import { localDb, cloudDb } from '@/db/db'
 import type { Card } from '@/types'
 
 type Grade = 'Заново' | 'Легко' | 'Средне' | 'Сложно'
 
 const route = useRoute()
+
+const { decks } = storeToRefs(useDecksStore())
+
+const deckType = decks.value.find((deck) => deck._id === route.params.deckId)!.type
 
 const cardsToReview = ref<Card[]>([])
 
@@ -63,7 +69,12 @@ function repeatCurrentCard(grade: Grade): void {
 
   const updatedCard = { ...currentCard.value, ...reviewedCard }
 
-  db.updateCard(updatedCard)
+  if (deckType === 'local') {
+    localDb.updateCard(updatedCard)
+  } else if (deckType === 'cloud') {
+    cloudDb.updateCard(updatedCard)
+  }
+
   cardsToReview.value[0] = updatedCard
 
   isCardFlipped.value = false
@@ -78,8 +89,15 @@ function repeatCurrentCard(grade: Grade): void {
 }
 
 onBeforeMount(async () => {
-  const deckId = route.params.deck as string
-  const allCardsFromDeck = await db.getAllCardsFromDeck(deckId)
+  const deckId = route.params.deckId as string
+
+  let allCardsFromDeck: Card[] = []
+
+  if (deckType === 'local') {
+    allCardsFromDeck = await localDb.getAllCardsFromDeck(deckId)
+  } else if (deckType === 'cloud') {
+    allCardsFromDeck = await cloudDb.getAllCardsFromDeck(deckId)
+  }
 
   const today = new Date().setHours(0, 0, 0, 0)
 

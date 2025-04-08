@@ -3,17 +3,22 @@ import { onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDecksStore } from '@/stores/decks'
+import { localDb, cloudDb } from '@/db/db'
 import IconDecks from '@/icons/IconDecks.vue'
 import IconDecksFill from '@/icons/IconDecksFill.vue'
 import IconNew from '@/icons/IconNew.vue'
 import IconNewFill from '@/icons/IconNewFill.vue'
-import db from '@/db'
 
 const route = useRoute()
 
 onBeforeMount(async () => {
   const { decks } = storeToRefs(useDecksStore())
-  decks.value = await db.getAllDecks()
+
+  const localDecks = await localDb.getAllDecks()
+  decks.value.push(...localDecks)
+
+  const cloudDecks = await cloudDb.getAllDecks()
+  decks.value.push(...cloudDecks)
 })
 </script>
 

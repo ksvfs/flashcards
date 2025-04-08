@@ -1,23 +1,40 @@
 <script setup lang="ts">
 import { ref, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import db from '@/db'
+import { storeToRefs } from 'pinia'
+import { useDecksStore } from '@/stores/decks'
+import { localDb, cloudDb } from '@/db/db'
 import type { Card } from '@/types'
 
 const router = useRouter()
 
+const deckId = useRoute().params.deckId as string
 const cardId = useRoute().params.cardId as string
 
 const card = ref<Card | null>(null)
 
+const { decks } = storeToRefs(useDecksStore())
+
+const deckType = decks.value.find((deck) => deck._id === deckId)!.type
+
 async function handleSubmit(): Promise<void> {
   if (!card.value) return
-  await db.updateCard({ ...card.value })
+
+  if (deckType === 'local') {
+    await localDb.updateCard({ ...card.value })
+  } else if (deckType === 'cloud') {
+    await cloudDb.updateCard({ ...card.value })
+  }
+
   router.back()
 }
 
 onBeforeMount(async () => {
-  card.value = await db.getCard(cardId)
+  if (deckType === 'local') {
+    card.value = await localDb.getCard(cardId)
+  } else if (deckType === 'cloud') {
+    card.value = await cloudDb.getCard(cardId)
+  }
 })
 </script>
 

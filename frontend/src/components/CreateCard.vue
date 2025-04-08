@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { createEmptyCard } from 'ts-fsrs'
 import { useDecksStore } from '@/stores/decks'
-import db from '@/db'
+import { localDb, cloudDb } from '@/db/db'
 
 const { decks } = storeToRefs(useDecksStore())
 
@@ -12,13 +12,20 @@ const newCardFront = ref('')
 const newCardBack = ref('')
 
 function handleSubmit() {
-  db.createCard({
+  const newCard = {
     ...createEmptyCard(new Date()),
     _id: crypto.randomUUID(),
     deckId: currentDeck.value._id,
     front: newCardFront.value,
     back: newCardBack.value,
-  })
+  }
+
+  if (currentDeck.value.type === 'local') {
+    localDb.createCard(newCard)
+  } else if (currentDeck.value.type === 'cloud') {
+    cloudDb.createCard(newCard)
+  }
+
   newCardFront.value = ''
   newCardBack.value = ''
 }
