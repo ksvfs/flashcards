@@ -2,15 +2,23 @@
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDecksStore } from '@/stores/decks'
+import { useLoginStore } from '@/stores/login'
 import { localDb, cloudDb } from '@/db/db'
 
 const { decks } = storeToRefs(useDecksStore())
+const { isLoggedIn } = storeToRefs(useLoginStore())
 
 const newDeckName = ref('')
 const newDeckType = ref<'local' | 'cloud'>('local')
 
 async function handleSubmit() {
-  const newDeck = { _id: crypto.randomUUID(), name: newDeckName.value, type: newDeckType.value }
+  const newDeck = {
+    _id: crypto.randomUUID(),
+    created: new Date(),
+    updated: new Date(),
+    name: newDeckName.value,
+    type: newDeckType.value,
+  }
 
   if (newDeckType.value === 'local') {
     localDb.createDeck(newDeck)
@@ -48,10 +56,14 @@ async function handleSubmit() {
     ></div>
   </div>
 
-  <form @submit.prevent="handleSubmit">
+  <form @submit.prevent="handleSubmit" v-if="newDeckType === 'local' || isLoggedIn">
     <input type="text" placeholder="Название колоды" v-model.trim="newDeckName" />
     <button type="submit" :disabled="!newDeckName">Создать</button>
   </form>
+  <div v-else class="not-logged-in">
+    <RouterLink :to="{ name: 'login' }">Войдите в аккаунт</RouterLink>, чтобы создавать облачные
+    колоды
+  </div>
 </template>
 
 <style scoped>
@@ -67,10 +79,10 @@ async function handleSubmit() {
   padding-block: 0.5rem;
   border-radius: 1rem;
   background-color: transparent;
-  color: var(--foreground-color);
+  color: var(--color-foreground);
 }
 .type-switch-option--active {
-  color: rgb(255, 255, 255);
+  color: var(--color-background);
   transition: color 0.1s ease-out;
 }
 
@@ -81,7 +93,7 @@ async function handleSubmit() {
   width: 50%;
   height: 100%;
   border-radius: 1rem;
-  background-color: var(--foreground-color);
+  background-color: var(--color-foreground);
   transition: right 0.1s ease-out;
 }
 .type-switch-active-indicator--right {
@@ -101,12 +113,18 @@ button {
 
 input {
   padding: 0.65rem;
-  border: 0.05rem solid var(--foreground-color);
+  border: 0.05rem solid var(--color-foreground);
+  background-color: var(--color-background);
 }
 
 button {
   padding-block: 0.7rem;
-  background-color: var(--foreground-color);
-  color: rgb(255, 255, 255);
+  background-color: var(--color-foreground);
+  color: var(--color-background);
+}
+
+.not-logged-in {
+  margin-top: 1rem;
+  text-align: center;
 }
 </style>

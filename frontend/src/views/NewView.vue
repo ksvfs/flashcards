@@ -39,7 +39,7 @@ const type = ref<'card' | 'deck'>(decks.value.length ? 'card' : 'deck')
 
     <template v-if="type === 'card'">
       <CreateCard v-if="decks.length" />
-      <div v-else>Создайте колоду перед тем, как создавать карточки</div>
+      <div v-else class="no-decks">Создайте колоду перед тем, как создавать карточки</div>
     </template>
 
     <CreateDeck v-else-if="type === 'deck'" />
@@ -72,7 +72,7 @@ h1 {
   border-radius: 1rem;
 }
 .type-switch-option--active {
-  color: rgb(255, 255, 255);
+  color: var(--color-background);
   transition: color 0.1s ease-out;
 }
 
@@ -83,10 +83,15 @@ h1 {
   width: 50%;
   height: 100%;
   border-radius: 1rem;
-  background-color: var(--foreground-color);
+  background-color: var(--color-foreground);
   transition: right 0.1s ease-out;
 }
 .type-switch-active-indicator--right {
   right: 0;
+}
+
+.no-decks {
+  margin-top: 1rem;
+  text-align: center;
 }
 </style>

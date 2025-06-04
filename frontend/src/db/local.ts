@@ -1,6 +1,38 @@
-import type { Deck, Card } from '@/types'
+import type { Deck, Card, CardCounts } from '@/../../common/types'
 
 let dbPromise: Promise<IDBDatabase> | null = null
+
+function serializeDates(obj: any): any {
+  const clone = structuredClone(obj)
+  
+  for (const key in clone) {
+    if (clone[key] instanceof Date) {
+      continue
+    } else if (typeof clone[key] === 'object' && clone[key] !== null) {
+      clone[key] = serializeDates(clone[key])
+    }
+  }
+  
+  return clone
+}
+
+function deserializeDates(obj: any): any {
+  if (!obj) return obj
+  
+  const clone = structuredClone(obj)
+  
+  for (const key in clone) {
+    if (clone[key] && typeof clone[key] === 'object') {
+      if (key === 'due' || key === 'created' || key === 'updated' || key === 'last_review') {
+        clone[key] = new Date(clone[key])
+      } else {
+        clone[key] = deserializeDates(clone[key])
+      }
+    }
+  }
+  
+  return clone
+}
 
 async function getDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise
@@ -11,7 +43,7 @@ async function getDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result
       db.createObjectStore('decks', { keyPath: '_id' })
-      db.createObjectStore('cards', { keyPath: '_id' }).createIndex('deckIndex', 'deckId')
+      db.createObjectStore('cards', { keyPath: '_id' }).createIndex('deckIndex', 'deck_id')
     }
 
     request.onsuccess = () => {
@@ -39,7 +71,7 @@ export default {
 
       request.onsuccess = () => {
         console.log(request.result)
-        resolve(request.result)
+        resolve(deserializeDates(request.result))
       }
 
       request.onerror = () => {
@@ -51,11 +83,12 @@ export default {
 
   async createDeck(deck: Deck): Promise<Deck> {
     const db = await getDB()
+    const serializedDeck = serializeDates(deck)
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('decks', 'readwrite')
       const store = transaction.objectStore('decks')
-      const request = store.add(deck)
+      const request = store.add(serializedDeck)
 
       request.onsuccess = () => {
         console.log(deck)
@@ -69,6 +102,81 @@ export default {
     })
   },
 
+  async updateDeck(deck: Deck): Promise<Deck> {
+    const db = await getDB()
+    const serializedDeck = serializeDates(deck)
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('decks', 'readwrite')
+      const store = transaction.objectStore('decks')
+      const request = store.put(serializedDeck)
+
+      request.onsuccess = () => {
+        console.log(deck)
+        resolve(deck)
+      }
+
+      request.onerror = () => {
+        console.error(request.error)
+        reject(request.error)
+      }
+    })
+  },
+
+  async deleteDeck(deckId: string): Promise<void> {
+    const db = await getDB()
+
+    const cardsToDelete = await this.getAllCardsFromDeck(deckId)
+    
+    for (const card of cardsToDelete) {
+      await this.deleteCard(card._id)
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('decks', 'readwrite')
+      const store = transaction.objectStore('decks')
+      const request = store.delete(deckId)
+
+      request.onsuccess = () => {
+        console.log(request.result)
+        resolve(request.result)
+      }
+
+      request.onerror = () => {
+        console.error(request.error)
+        reject(request.error)
+      }
+    })
+  },
+
+  async getCardCounts(): Promise<CardCounts> {
+    const cards = await this.getAllCards()
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const cardCounts: CardCounts = {}
+
+    for (const card of cards) {
+      const cardDue = new Date(card.due)
+      cardDue.setHours(0, 0, 0, 0)
+
+      if (cardDue <= today) {
+        if (!cardCounts[card.deck_id]) {
+          cardCounts[card.deck_id] = { old: 0, new: 0 }
+        }
+
+        if (card.reps > 0) {
+          cardCounts[card.deck_id].old++
+        } else {
+          cardCounts[card.deck_id].new++
+        }
+      }
+    }
+
+    return cardCounts
+  },
+
   async getAllCards(): Promise<Card[]> {
     const db = await getDB()
 
@@ -78,12 +186,11 @@ export default {
       const request = store.getAll()
 
       request.onsuccess = () => {
-        console.log(request.result)
-        resolve(request.result)
+        const deserializedCards = deserializeDates(request.result)
+        resolve(deserializedCards)
       }
 
       request.onerror = () => {
-        console.error(request.error)
         reject(request.error)
       }
     })
@@ -100,7 +207,7 @@ export default {
 
       request.onsuccess = () => {
         console.log(request.result)
-        resolve(request.result)
+        resolve(deserializeDates(request.result))
       }
 
       request.onerror = () => {
@@ -120,7 +227,7 @@ export default {
 
       request.onsuccess = () => {
         console.log(request.result)
-        resolve(request.result)
+        resolve(deserializeDates(request.result))
       }
 
       request.onerror = () => {
@@ -132,11 +239,12 @@ export default {
 
   async createCard(card: Card): Promise<Card> {
     const db = await getDB()
+    const serializedCard = serializeDates(card)
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('cards', 'readwrite')
       const store = transaction.objectStore('cards')
-      const request = store.add(card)
+      const request = store.add(serializedCard)
 
       request.onsuccess = () => {
         console.log(card)
@@ -152,11 +260,12 @@ export default {
 
   async updateCard(card: Card): Promise<Card> {
     const db = await getDB()
+    const serializedCard = serializeDates(card)
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('cards', 'readwrite')
       const store = transaction.objectStore('cards')
-      const request = store.put(card)
+      const request = store.put(serializedCard)
 
       request.onsuccess = () => {
         console.log(card)

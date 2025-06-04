@@ -10,6 +10,7 @@ COPY src ./src
 EXPOSE 3000
 
 RUN useradd app
+
 USER app
 
 CMD ["bun", "dev"]

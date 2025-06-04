@@ -1,17 +1,33 @@
 import { MongoClient } from 'mongodb'
-import type { Deck, Card } from './types'
+import type { Deck, Card, User, Session, PublicDeck, PublicCard } from './types'
+import publicDecks from './data/publicDecks'
+import publicCards from './data/publicCards'
 
-export async function initDB() {
-  const user = Bun.env.MONGO_USER
-  const pass = Bun.env.MONGO_PASS
+const user = Bun.env.MONGO_USER
+const pass = Bun.env.MONGO_PASS
 
-  const uri = `mongodb://${user}:${pass}@mongo:27017`
-  const client = new MongoClient(uri)
-  await client.connect()
+const uri = `mongodb://${user}:${pass}@mongo:27017`
+const client = new MongoClient(uri)
+await client.connect()
 
-  const db = client.db('flashcards')
-  const decks = db.collection<Deck>('decks')
-  const cards = db.collection<Card>('cards')
+const db = client.db('flashcards')
+const decksCollection = db.collection<Deck>('decks')
+const cardsCollection = db.collection<Card>('cards')
+const usersCollection = db.collection<User>('users')
+const sessionsCollection = db.collection<Session>('session')
+const publicDecksCollection = db.collection<PublicDeck>('publicDecks')
+const publicCardsCollection = db.collection<PublicCard>('publicCards')
 
-  return { decks, cards }
+await publicDecksCollection.deleteMany({})
+await publicDecksCollection.insertMany(publicDecks)
+await publicCardsCollection.deleteMany({})
+await publicCardsCollection.insertMany(publicCards)
+
+export {
+  decksCollection,
+  cardsCollection,
+  usersCollection,
+  sessionsCollection,
+  publicDecksCollection,
+  publicCardsCollection,
 }

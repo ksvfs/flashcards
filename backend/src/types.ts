@@ -1,31 +1,34 @@
-declare enum State {
-  New = 0,
-  Learning = 1,
-  Review = 2,
-  Relearning = 3,
-}
+import type {
+  Deck as CommonDeck,
+  Card as CommonCard,
+  Attachment as CommonAttachment,
+  PublicDeck as CommonPublicDeck,
+  PublicCard as CommonPublicCard,
+} from '../../common/types'
 
-type FSRSCard = {
-  due: Date
-  stability: number
-  difficulty: number
-  elapsed_days: number
-  scheduled_days: number
-  reps: number
-  lapses: number
-  state: State
-  last_review?: Date
-}
+export type Deck = CommonDeck & { user_id: string }
 
-export type Card = FSRSCard & {
+export type Card = CommonCard
+
+export type Attachment = CommonAttachment & { user_id: string }
+
+export type User = {
   _id: string
-  deckId: string
-  front: string
-  back: string
+  created: Date
+  username: string
+  password: string
 }
 
-export type Deck = {
+export type Session = {
   _id: string
-  name: string
-  type: 'local' | 'cloud'
+  user_id: string
+  created: Date
+  expires: Date
 }
+
+export type PublicDeck = Omit<CommonPublicDeck, 'cards' | 'downloads'> & {
+  cards?: number
+  downloads?: number
+}
+
+export type PublicCard = CommonPublicCard

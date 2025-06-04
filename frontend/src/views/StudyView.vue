@@ -3,26 +3,63 @@ import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { fsrs } from 'ts-fsrs'
+import { marked } from 'marked'
+import createDOMPurify from 'dompurify'
 import StudyHeader from '@/components/StudyHeader.vue'
 import IconCheck from '@/icons/IconCheck.vue'
 import { useDecksStore } from '@/stores/decks'
+import { useSettingsStore } from '@/stores/settings'
+import DrawingMode from '@/components/DrawingMode.vue'
 import { localDb, cloudDb } from '@/db/db'
-import type { Card } from '@/types'
+import type { Card } from '@/../../common/types'
 
 type Grade = 'Заново' | 'Легко' | 'Средне' | 'Сложно'
 
 const route = useRoute()
 
 const { decks } = storeToRefs(useDecksStore())
+const { settings } = storeToRefs(useSettingsStore())
 
-const deckType = decks.value.find((deck) => deck._id === route.params.deckId)!.type
+const hasDeckId = computed(() => !!route.params.deckId)
+const deckType = computed(() => {
+  if (!hasDeckId.value) return null
+  return decks.value.find((deck) => deck._id === route.params.deckId)?.type
+})
 
 const cardsToReview = ref<Card[]>([])
+const isLoading = ref(true)
 
 const currentCard = computed(() => {
   return cardsToReview.value[0]
 })
 
+const DOMPurify = createDOMPurify(window)
+
+const drawingMode = ref(false)
+
+DOMPurify.setConfig({
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|data:image\/)/,
+})
+
+function replaceIdsWithDataUris(content: string, images: Record<string, string>): string {
+  return content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (full, alt, id) => {
+    const dataUri = images[id]
+    return dataUri ? `![${alt}](${dataUri})` : full
+  })
+}
+
+const currentCardContent = computed(() => ({
+  front: DOMPurify.sanitize(
+    marked.parse(
+      replaceIdsWithDataUris(currentCard.value.front, currentCard.value.images || {}),
+    ) as string,
+  ),
+  back: DOMPurify.sanitize(
+    marked.parse(
+      replaceIdsWithDataUris(currentCard.value.back, currentCard.value.images || {}),
+    ) as string,
+  ),
+}))
 const isCardFlipped = ref(false)
 
 function getTimeUntil(date: Date): string {
@@ -63,15 +100,23 @@ function repeatCurrentCard(grade: Grade): void {
     Легко: 4,
   }
 
-  const schdulingIndex = gradesToSchedulingIndexes[grade]
+  const schedulingIndex = gradesToSchedulingIndexes[grade]
 
-  const reviewedCard = scheduling[schdulingIndex].card
+  const reviewedCard = scheduling[schedulingIndex].card
 
   const updatedCard = { ...currentCard.value, ...reviewedCard }
 
-  if (deckType === 'local') {
+  if (currentCard.value.images) {
+    updatedCard.images = { ...currentCard.value.images }
+  }
+
+  const cardDeckType = hasDeckId.value
+    ? deckType.value
+    : decks.value.find((deck) => deck._id === currentCard.value.deck_id)?.type
+
+  if (cardDeckType === 'local') {
     localDb.updateCard(updatedCard)
-  } else if (deckType === 'cloud') {
+  } else if (cardDeckType === 'cloud') {
     cloudDb.updateCard(updatedCard)
   }
 
@@ -89,35 +134,73 @@ function repeatCurrentCard(grade: Grade): void {
 }
 
 onBeforeMount(async () => {
-  const deckId = route.params.deckId as string
-
-  let allCardsFromDeck: Card[] = []
-
-  if (deckType === 'local') {
-    allCardsFromDeck = await localDb.getAllCardsFromDeck(deckId)
-  } else if (deckType === 'cloud') {
-    allCardsFromDeck = await cloudDb.getAllCardsFromDeck(deckId)
-  }
-
   const today = new Date().setHours(0, 0, 0, 0)
 
-  cardsToReview.value = allCardsFromDeck.filter(
-    (card) => new Date(card.due).setHours(0, 0, 0, 0) <= today,
-  )
+  if (hasDeckId.value) {
+    const deckId = route.params.deckId as string
+    let allCardsFromDeck: Card[] = []
+
+    if (deckType.value === 'local') {
+      allCardsFromDeck = await localDb.getAllCardsFromDeck(deckId)
+    } else if (deckType.value === 'cloud') {
+      allCardsFromDeck = await cloudDb.getAllCardsFromDeck(deckId)
+    }
+
+    const dueCards = allCardsFromDeck.filter((card) => {
+      const dueDate = card.due instanceof Date ? card.due : new Date(card.due)
+      return dueDate.setHours(0, 0, 0, 0) <= today
+    })
+
+    const newCards = dueCards.filter((card) => card.reps === 0)
+    const reviewCards = dueCards.filter((card) => card.reps > 0)
+
+    const limitedNewCards = newCards.slice(0, settings.value.cardLimit)
+
+    cardsToReview.value = [...reviewCards, ...limitedNewCards].sort(() => Math.random() - 0.5)
+  } else {
+    const localCards = await localDb.getAllCards()
+
+    let cloudCards: Card[] = []
+    try {
+      cloudCards = await cloudDb.getAllCards()
+    } catch (error) {}
+
+    const allCards = [...localCards, ...cloudCards]
+    const dueCards = allCards.filter((card) => {
+      const dueDate = card.due instanceof Date ? card.due : new Date(card.due)
+      return dueDate.setHours(0, 0, 0, 0) <= today
+    })
+
+    const newCards = dueCards.filter((card) => card.reps === 0)
+    const reviewCards = dueCards.filter((card) => card.reps > 0)
+
+    const limitedNewCards = newCards.slice(0, settings.value.cardLimit)
+
+    cardsToReview.value = [...reviewCards, ...limitedNewCards].sort(() => Math.random() - 0.5)
+  }
+
+  isLoading.value = false
 })
 </script>
 
 <template>
   <main>
-    <StudyHeader :current-card @current-card-deleted="cardsToReview.shift()" />
+    <StudyHeader
+      :current-card
+      :drawing-mode
+      @draw-mode-toggled="drawingMode = !drawingMode"
+      @current-card-deleted="cardsToReview.shift()"
+    />
 
     <div class="study">
+      <DrawingMode v-if="drawingMode" class="draw" />
+
       <div v-if="currentCard" class="card">
-        <div v-if="isCardFlipped && currentCard.back">{{ currentCard.back }}</div>
-        <div v-else>{{ currentCard.front }}</div>
+        <div v-if="isCardFlipped && currentCard.back" v-html="currentCardContent.back"></div>
+        <div v-else v-html="currentCardContent.front"></div>
       </div>
 
-      <div v-else class="done">
+      <div v-else-if="!isLoading" class="done">
         <IconCheck class="done-icon" />
         <div>Сегодня нечего повторять</div>
       </div>
@@ -144,9 +227,14 @@ onBeforeMount(async () => {
 
 <style scoped>
 .study {
+  position: relative;
   height: calc(100% - 3.5rem);
   display: flex;
   flex-direction: column;
+}
+
+.draw {
+  position: absolute;
 }
 
 .card {
@@ -155,10 +243,16 @@ onBeforeMount(async () => {
   flex: 1;
   text-align: center;
   align-content: center;
-  white-space: pre;
   overflow-y: auto;
+  line-height: 1.6;
   border-radius: 0.5rem;
   box-shadow: rgba(100, 100, 111, 0.2) 0 0.45rem 1.8rem 0;
+}
+
+:deep(.card img) {
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: -1rem;
 }
 
 .done {
@@ -190,8 +284,10 @@ onBeforeMount(async () => {
   padding-block: 0.4rem;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.1rem;
   font-size: 0.9rem;
+  color: rgb(85, 85, 85);
 }
 .repeat-button-заново {
   background-color: rgb(255, 204, 211);
@@ -210,7 +306,7 @@ onBeforeMount(async () => {
   width: 100%;
   padding: 0.9rem;
   border-radius: 0.5rem;
-  background-color: var(--foreground-color);
-  color: rgb(255, 255, 255);
+  background-color: var(--color-foreground);
+  color: var(--color-background);
 }
 </style>

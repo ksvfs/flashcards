@@ -4,16 +4,19 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDecksStore } from '@/stores/decks'
 import { localDb, cloudDb } from '@/db/db'
+import IconBrush from '@/icons/IconBrush.vue'
+import IconBrushFill from '@/icons/IconBrushFill.vue'
 import IconThreeDots from '@/icons/IconThreeDots.vue'
 import IconEdit from '@/icons/IconEdit.vue'
 import IconDelete from '@/icons/IconDelete.vue'
-import type { Card } from '@/types'
+import type { Card } from '@/../../common/types'
 
 const props = defineProps<{
   currentCard: Card | undefined
+  drawingMode: boolean
 }>()
 
-const emit = defineEmits(['currentCardDeleted'])
+const emit = defineEmits(['currentCardDeleted', 'drawModeToggled'])
 
 const router = useRouter()
 
@@ -44,7 +47,7 @@ function deleteCurrentCard(): void {
 
   const { decks } = storeToRefs(useDecksStore())
 
-  const currentDeck = decks.value.find((deck) => deck._id === currentCard.deckId)!
+  const currentDeck = decks.value.find((deck) => deck._id === currentCard.deck_id)!
 
   if (currentDeck.type === 'local') {
     localDb.deleteCard(props.currentCard._id)
@@ -53,11 +56,18 @@ function deleteCurrentCard(): void {
   }
 
   emit('currentCardDeleted')
+
+  showMenu.value = false
 }
 </script>
 
 <template>
   <header>
+    <button v-if="currentCard" @click="emit('drawModeToggled')" class="draw">
+      <IconBrushFill v-if="drawingMode" />
+      <IconBrush v-else />
+    </button>
+
     <h1>Повторение</h1>
 
     <button v-if="currentCard" class="menu-button" @click.stop="showMenu = true">
@@ -69,8 +79,8 @@ function deleteCurrentCard(): void {
         class="menu-item"
         @click="
           router.push({
-            name: 'edit',
-            params: { deckId: currentCard.deckId, cardId: currentCard._id },
+            name: 'edit-card',
+            params: { deckId: currentCard.deck_id, cardId: currentCard._id },
           })
         "
       >
@@ -86,19 +96,25 @@ function deleteCurrentCard(): void {
 <style scoped>
 header {
   height: 3.5rem;
+  padding-inline: 1rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-bottom: 0.05rem solid rgb(242, 242, 242);
+  border-bottom: 0.05rem solid var(--color-border-secondary);
 }
 
-h1 {
-  font-size: 1.3rem;
+.draw {
+  position: absolute;
+  left: 1rem;
 }
 
 .menu-button {
   position: absolute;
   right: 1rem;
+}
+
+h1 {
+  font-size: 1.3rem;
 }
 
 .menu-button-icon {
@@ -108,6 +124,7 @@ h1 {
 
 .menu {
   position: absolute;
+  z-index: 1;
   right: 1rem;
   top: 1rem;
   overflow: hidden;
@@ -115,8 +132,9 @@ h1 {
   display: flex;
   flex-direction: column;
   border-radius: 0.5rem;
-  background-color: rgb(255, 255, 255);
-  box-shadow: rgba(99, 99, 99, 0.2) 0 0.125rem 0.5rem 0;
+  background-color: var(--color-background);
+  box-shadow: var(--modals-box-shadow);
+  border: var(--modals-border);
 }
 
 .menu-item {
@@ -127,7 +145,7 @@ h1 {
   border-radius: 0.5rem;
 
   &:hover {
-    background-color: rgb(246, 246, 246);
+    background-color: var(--color-foreground-secondary);
   }
 }
 

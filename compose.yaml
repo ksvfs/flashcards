@@ -1,0 +1,86 @@
+services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file:
+      - .env
+    depends_on:
+      - server
+      - frontend
+
+  server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/src
+          target: /usr/local/app/src
+        - action: rebuild
+          path: ./backend/package.json
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /usr/local/app/src
+        - action: rebuild
+          path: ./frontend/package.json
+    expose:
+      - "5173"
+    env_file:
+      - .env
+
+  docs:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: >
+      sh -c "if [ \"$VITE_MODE\" = \"dev\" ]; then bun run docs:dev; else bun run docs:preview; fi"
+    env_file:
+      - .env
+    expose:
+      - "5174"
+    depends_on:
+      - server
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /usr/local/app/src
+        - action: rebuild
+          path: ./frontend/package.json
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+    volumes:
+      - mongo-data:/data/db
+    env_file:
+      - .env
+
+volumes:
+  mongo-data:
+  caddy_data:
+  caddy_config:

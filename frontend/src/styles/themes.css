@@ -1,0 +1,29 @@
+:root {
+  color-scheme: light;
+
+  --color-foreground: rgb(60, 60, 60);
+  --color-foreground-secondary: rgb(243, 243, 243);
+  --color-background: rgb(255, 255, 255);
+  --color-border-secondary: rgb(242, 242, 242);
+  --color-link: rgb(0, 102, 204);
+
+  --color-canvas: rgba(255, 255, 255, 0.2);
+
+  --modals-box-shadow: rgba(99, 99, 99, 0.2) 0 0.125rem 0.5rem 0;
+  --modals-border: none;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --color-background: rgb(29, 29, 29);
+  --color-foreground-secondary: rgb(46, 46, 46);
+  --color-foreground: rgb(255, 255, 255);
+  --color-border-secondary: rgb(80, 80, 80);
+  --color-link: rgb(88, 171, 255);
+
+  --color-canvas: rgba(0, 0, 0, 0.2);
+
+  --modals-box-shadow: none;
+  --modals-border: 0.05rem solid var(--color-border-secondary);
+}

@@ -1,0 +1,18 @@
+{$DOMAIN}, localhost {
+    handle_path /api/* {
+        reverse_proxy server:3000
+    }
+
+    @docsExact {
+        path /docs
+    }
+    redir @docsExact /docs/ 302
+
+    handle /docs* {
+        reverse_proxy docs:5174
+    }
+
+    handle {
+        reverse_proxy frontend:5173
+    }
+}

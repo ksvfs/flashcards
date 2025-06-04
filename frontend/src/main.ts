@@ -5,8 +5,8 @@ import App from '@/App.vue'
 import router from '@/router'
 
 import '@/styles/reset.css'
+import '@/styles/themes.css'
 import '@/styles/fonts.css'
-import '@/styles/variables.css'
 import '@/styles/global.css'
 
 const app = createApp(App)
