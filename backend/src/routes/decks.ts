@@ -24,7 +24,7 @@ function deserializeDates(obj: any): any {
   return obj
 }
 
-decks.use('*', authMiddleware)
+decks.use('/decks', authMiddleware)
 
 decks.get('/decks', async (c) => {
   try {
