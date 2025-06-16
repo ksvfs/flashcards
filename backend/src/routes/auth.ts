@@ -5,9 +5,9 @@ import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 export const auth = new Hono()
 
 auth.post('/login', async (c) => {
-  const { login, password } = await c.req.json()
+  const { username, password } = await c.req.json()
 
-  const user = await usersCollection.findOne({ login })
+  const user = await usersCollection.findOne({ username })
 
   if (!user) {
     return c.json({ error: 'Неверные учётные данные' }, 401)
