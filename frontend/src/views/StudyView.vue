@@ -255,6 +255,11 @@ onBeforeMount(async () => {
   margin-bottom: -1rem;
 }
 
+:deep(.card ul),
+:deep(.card li) {
+  list-style-position: inside;
+}
+
 .done {
   flex: 1;
   display: flex;
